@@ -1,0 +1,14 @@
+{
+  "name": "snake_js",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Gokulnath <gokulnath@hatio.in>",
+  "license": "MIT",
+  "devDependencies": {
+    "parcel-bundler": "^1.12.4"
+  },
+  "scripts": {
+    "dev": "parcel index.html",
+    "build": "parcel build index.html"
+  }
+}
