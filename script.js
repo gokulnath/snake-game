@@ -4,9 +4,9 @@ function snakeGame() {
   console.log("started");
 
   let snake = {};
-  const size = 40;
-  const maxColumn = 10;
-  const maxRow = 10;
+  const size = 20;
+  const maxColumn = 20;
+  const maxRow = 20;
   const LEFT = "left";
   const RIGHT = "right";
   const UP = "up";
@@ -35,47 +35,34 @@ function snakeGame() {
       ];
 
       snake.direction = RIGHT;
+      snake.alive = true;
 
       snake.positions.forEach(function (item) {
         ctx.fillRect(...item);
       });
+
+      ctx.fillStyle = "green";
     }
   }
 
-  function incrementPosition(ctx) {
-    snake.positions.forEach(function (item) {
-      ctx.clearRect(...item);
-    });
-
-    nextPosition();
-
-    snake.positions.forEach(function (item) {
-      ctx.fillRect(...item);
-    });
-  }
-
   function nextPosition() {
-    let head;
+    let head = [...snake.positions[0]];
     let newValue;
 
     switch (snake.direction) {
       case RIGHT:
-        head = [...snake.positions[0]];
         newValue = head[0] + size;
         head.splice(0, 1, newValue);
         break;
       case LEFT:
-        head = [...snake.positions[0]];
         newValue = head[0] - size;
         head.splice(0, 1, newValue);
         break;
       case UP:
-        head = [...snake.positions[0]];
         newValue = head[1] - size;
         head.splice(1, 1, newValue);
         break;
       case DOWN:
-        head = [...snake.positions[0]];
         newValue = head[1] + size;
         head.splice(1, 1, newValue);
         break;
@@ -119,49 +106,73 @@ function snakeGame() {
     return false;
   }
 
-  function draw() {
-    let myCanvas = document.getElementById("mycanvas");
-    let ctx = myCanvas.getContext("2d");
-    ctx.fillStyle = "green";
-    initialState(ctx);
-    incrementPosition(ctx);
-    randomFood(ctx);
+  function nextGameState(context) {
+    stateTransform(context);
+    paint(context);
+  }
+  function stateTransform(context) {
+    snake.positions.forEach(function (item) {
+      context.clearRect(...item);
+    });
+
+    nextPosition();
+    randomFood(context);
+  }
+  function paint(context) {
+    snake.positions.forEach(function (item) {
+      context.fillRect(...item);
+    });
+    context.fillStyle = "green";
   }
 
-  function keyHandler(e) {
+  function keyHandler(e, context) {
     console.log(e.key);
-    if (e.key === "Enter") {
-      console.log("starting again");
-      init();
-    }
-    if (e.key === "Escape") {
-      console.log("pressing ESC stops the game");
-      endGame();
-    }
 
     switch (e.key) {
       case "ArrowRight":
         if (snake.direction != LEFT) snake.direction = RIGHT;
         break;
       case "ArrowLeft":
-        if (snake.direction != RIGHT) snake.direction = LEFT;
+        if ((snake.direction = RIGHT)) snake.direction = LEFT;
         break;
       case "ArrowDown":
         if (snake.direction != UP) snake.direction = DOWN;
         break;
       case "ArrowUp":
         if (snake.direction != DOWN) snake.direction = UP;
+      default:
+        return;
     }
+
+    clearInterval(setIntervalId);
+
+    setIntervalId = setTimeout(function tick() {
+      nextGameState(context);
+      if (snake.alive) setIntervalId = setTimeout(tick, 150);
+    }, 0);
   }
 
-  function endGame() {
+  function endGame(context) {
     console.log("You might have lost the game :(");
     window.clearInterval(setIntervalId);
+    snake.alive = false;
+    if (!!context) context.fillStyle = "black";
   }
 
   function init() {
-    window.addEventListener("keydown", keyHandler);
-    setIntervalId = window.setInterval(draw, 1 * 1000);
+    let myCanvas = document.getElementById("mycanvas");
+    let ctx = myCanvas.getContext("2d");
+    ctx.fillStyle = "green";
+
+    initialState(ctx);
+
+    window.addEventListener("keydown", function (event) {
+      keyHandler(event, ctx);
+    });
+
+    setIntervalId = window.setInterval(function () {
+      nextGameState(ctx);
+    }, 1 * 150);
   }
 
   init();
