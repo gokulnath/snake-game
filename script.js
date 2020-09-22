@@ -3,7 +3,6 @@
 function snakeGame() {
   console.log("started");
 
-  let snake = {};
   const size = 20;
   const maxColumn = 20;
   const maxRow = 20;
@@ -12,13 +11,26 @@ function snakeGame() {
   const UP = "up";
   const DOWN = "down";
   let setIntervalId;
+  let worldStates = {
+    prevSnake: {},
+    currentSnake: {
+      positions: [
+        [size * 2, size * 5, size, size],
+        [size * 1, size * 5, size, size],
+        [size * 0, size * 5, size, size],
+      ],
+      direction: RIGHT,
+      alive: true,
+    },
+    gameOn: true,
+  };
 
   function randomFood(ctx) {
-    if (!snake.foodPosition) {
+    if (!worldStates.foodPosition) {
       let column = randomPosition();
       let row = randomPosition();
-      snake.foodPosition = [column * size, row * size, size, size];
-      ctx.fillRect(...snake.foodPosition);
+      worldStates.foodPosition = [column * size, row * size, size, size];
+      ctx.fillRect(...worldStates.foodPosition);
     }
   }
 
@@ -27,29 +39,29 @@ function snakeGame() {
   }
 
   function initialState(ctx) {
-    if (!snake.positions) {
-      snake.positions = [
-        [size * 2, size * 5, size, size],
-        [size * 1, size * 5, size, size],
-        [size * 0, size * 5, size, size],
-      ];
-
-      snake.direction = RIGHT;
-      snake.alive = true;
-
-      snake.positions.forEach(function (item) {
-        ctx.fillRect(...item);
-      });
-
-      ctx.fillStyle = "green";
-    }
+    ctx.fillStyle = "green";
+    worldStates.currentSnake.positions.forEach(function (item) {
+      ctx.fillRect(...item);
+    });
   }
 
+  function nextGameState(context) {
+    createNextWorldState();
+
+    paint(context);
+  }
+
+  function createNextWorldState() {
+    worldStates.prevSnake = JSON.parse(
+      JSON.stringify(worldStates.currentSnake)
+    );
+    nextPosition();
+  }
   function nextPosition() {
-    let head = [...snake.positions[0]];
+    let head = [...worldStates.currentSnake.positions[0]];
     let newValue;
 
-    switch (snake.direction) {
+    switch (worldStates.currentSnake.direction) {
       case RIGHT:
         newValue = head[0] + size;
         head.splice(0, 1, newValue);
@@ -68,9 +80,9 @@ function snakeGame() {
         break;
     }
 
-    snake.positions.unshift(head);
+    worldStates.currentSnake.positions.unshift(head);
 
-    if (!ateFood(head)) snake.positions.pop();
+    if (!ateFood(head)) worldStates.currentSnake.positions.pop();
     selfCollision(head);
     wallCollision(head);
   }
@@ -82,10 +94,10 @@ function snakeGame() {
   }
 
   function selfCollision(head) {
-    for (let i = 1; i < snake.positions.length - 1; i++) {
+    for (let i = 1; i < worldStates.currentSnake.positions.length - 1; i++) {
       if (
-        head[0] === snake.positions[i][0] &&
-        head[1] === snake.positions[i][1]
+        head[0] === worldStates.currentSnake.positions[i][0] &&
+        head[1] === worldStates.currentSnake.positions[i][1]
       ) {
         endGame();
       }
@@ -93,35 +105,30 @@ function snakeGame() {
   }
 
   function ateFood(head) {
-    if (!snake.foodPosition) return false;
+    if (!worldStates.foodPosition) return false;
 
     if (
-      head[0] === snake.foodPosition[0] &&
-      head[1] === snake.foodPosition[1]
+      head[0] === worldStates.foodPosition[0] &&
+      head[1] === worldStates.foodPosition[1]
     ) {
-      snake.foodPosition = null;
+      worldStates.foodPosition = null;
       return true;
     }
 
     return false;
   }
 
-  function nextGameState(context) {
-    stateTransform(context);
-    paint(context);
-  }
-  function stateTransform(context) {
-    snake.positions.forEach(function (item) {
+  function paint(context) {
+    if (!worldStates.gameOn) return;
+
+    worldStates.prevSnake.positions.forEach(function (item) {
       context.clearRect(...item);
     });
-
-    nextPosition();
-    randomFood(context);
-  }
-  function paint(context) {
-    snake.positions.forEach(function (item) {
+    worldStates.currentSnake.positions.forEach(function (item) {
       context.fillRect(...item);
     });
+
+    randomFood(context);
     context.fillStyle = "green";
   }
 
@@ -130,39 +137,45 @@ function snakeGame() {
 
     switch (e.key) {
       case "ArrowRight":
-        if (snake.direction != LEFT) snake.direction = RIGHT;
+        if (worldStates.currentSnake.direction != LEFT)
+          worldStates.currentSnake.direction = RIGHT;
         break;
       case "ArrowLeft":
-        if ((snake.direction = RIGHT)) snake.direction = LEFT;
+        if ((worldStates.currentSnake.direction = RIGHT))
+          worldStates.currentSnake.direction = LEFT;
         break;
       case "ArrowDown":
-        if (snake.direction != UP) snake.direction = DOWN;
+        if (worldStates.currentSnake.direction != UP)
+          worldStates.currentSnake.direction = DOWN;
         break;
       case "ArrowUp":
-        if (snake.direction != DOWN) snake.direction = UP;
+        if (worldStates.currentSnake.direction != DOWN)
+          worldStates.currentSnake.direction = UP;
       default:
         return;
     }
 
-    clearInterval(setIntervalId);
+    clearTimeout(setIntervalId);
 
     setIntervalId = setTimeout(function tick() {
       nextGameState(context);
-      if (snake.alive) setIntervalId = setTimeout(tick, 150);
+      if (worldStates.gameOn) setIntervalId = setTimeout(tick, 150);
     }, 0);
   }
 
   function endGame(context) {
     console.log("You might have lost the game :(");
     window.clearInterval(setIntervalId);
-    snake.alive = false;
+    worldStates.gameOn = false;
     if (!!context) context.fillStyle = "black";
   }
 
   function init() {
+    console.log("init");
+    console.log(worldStates.currentSnake.positions);
+
     let myCanvas = document.getElementById("mycanvas");
     let ctx = myCanvas.getContext("2d");
-    ctx.fillStyle = "green";
 
     initialState(ctx);
 
